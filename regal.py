@@ -19,7 +19,7 @@ from alignments import *
 def parse_args():
     parser = argparse.ArgumentParser(description="Run REGAL.")
 
-    parser.add_argument('--input', nargs='?', default='data/DATA_combined_edges.txt',
+    parser.add_argument('--input', nargs='?', default='data/MNIST Dense (300, 100)+MNIST Dense (100, 60)_combined_edges.txt',
                         help="Edgelist of combined input graph")
 
     parser.add_argument('--output', nargs='?', default='emb/custom990-1.emb',
@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('--dimensions', type=int, default=128,
                         help='Number of dimensions. Default is 128.')
 
-    parser.add_argument('--k', type=int, default=10,
+    parser.add_argument('--k', type=int, default=5,
                         help='Controls of landmarks to sample. Default is 10.')
 
     parser.add_argument('--untillayer', type=int, default=2,
@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument('--alpha', type=float, default=0.01, help="Discount factor for further layers")
     parser.add_argument('--gammastruc', type=float, default=1, help="Weight on structural similarity")
     parser.add_argument('--gammaattr', type=float, default=1, help="Weight on attribute similarity")
-    parser.add_argument('--numtop', type=int, default=2,
+    parser.add_argument('--numtop', type=int, default=3,
                         help="Number of top similarities to compute with kd-tree.  If 0, computes all pairwise similarities.")
     parser.add_argument('--buckets', default=2, type=float, help="base of log for degree (node feature) binning")
     return parser.parse_args()
