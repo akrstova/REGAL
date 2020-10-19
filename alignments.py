@@ -7,7 +7,7 @@ import scipy.sparse as sp
 from scipy.spatial.distance import cosine
 
 
-def get_embedding_similarities(embed, embed2=None, sim_measure="euclidean", num_top=None):
+def get_embedding_similarities(embed, embed2=None, sim_measure="Euclidean", num_top=None):
     n_nodes, dim = embed.shape
     if embed2 is None:
         embed2 = embed
@@ -17,21 +17,23 @@ def get_embedding_similarities(embed, embed2=None, sim_measure="euclidean", num_
         return kd_sim
 
     # All pairwise distance computation
-    if sim_measure == "cosine":
+    if sim_measure == "Cosine":
         similarity_matrix = sklearn.metrics.pairwise.cosine_similarity(embed, embed2)
-    else:
+    elif sim_measure == "Euclidean":
         similarity_matrix = sklearn.metrics.pairwise.euclidean_distances(embed, embed2)
+        similarity_matrix = np.exp(-similarity_matrix)
+    elif sim_measure == "Manhattan":
+        similarity_matrix = sklearn.metrics.pairwise.manhattan_distances(embed, embed2)
         similarity_matrix = np.exp(-similarity_matrix)
 
     return similarity_matrix
 
 
 # Split embeddings in half (TODO generalize to different numbers and sizes of networks)
-def get_embeddings(combined_embed):
+def get_embeddings(combined_embed, g1_nodes, g2_nodes):
     n_nodes = combined_embed.shape[0] / 2  # right now assume graphs are same size
-    dim = combined_embed.shape[1]
-    embed1 = combined_embed[:n_nodes]
-    embed2 = combined_embed[n_nodes:]
+    embed1 = combined_embed[:g1_nodes]
+    embed2 = combined_embed[-g2_nodes:]
 
     return embed1, embed2
 
@@ -42,17 +44,16 @@ def score(alignment_matrix, true_alignments=None):
     if true_alignments is None:  # assume it's just identity permutation
         return np.sum(np.diagonal(alignment_matrix))
     else:
-        nodes_g1 = [int(node_g1) for node_g1 in true_alignments.keys()]
-        nodes_g2 = [int(true_alignments[node_g1]) for node_g1 in true_alignments.keys()]
-        return np.sum(alignment_matrix[nodes_g1, nodes_g2])
-
-
-def score_embeddings_matrices(embed1, embed2, topk=None, similarity_threshold=None, normalize=False,
-                              true_alignments=None, sim="cosine"):
-    similarity_matrix = get_embedding_similarities(embed1, embed2, sim_measure=sim)
-    alignment_matrix = get_estimated_alignment_matrix(similarity_matrix, similarity_threshold, normalize)
-    score = score_alignment_matrix(alignment_matrix, topk=topk, true_alignments=true_alignments)
-    return score
+        for i in range(len(alignment_matrix)):
+            best_match = alignment_matrix[i].tolist().index(max(alignment_matrix[i]))
+            print('Best match for node {} from G1 is node {} from G2'.format(i, best_match))
+        # nodes_g1 = [int(node_g1) for node_g1 in true_alignments.keys()]
+        # nodes_g2 = [int(true_alignments[node_g1]) for node_g1 in true_alignments.keys()]
+        # for node in nodes_g1:
+        #     best_match = alignment_matrix[node].tolist().index(max(alignment_matrix[node]))
+        #     print('Best match for node {} from G1 is node {} from G2'.format(node, nodes_g2[best_match]))
+        # return np.sum(alignment_matrix[nodes_g1, nodes_g2])
+        return 0
 
 
 def kd_align(emb1, emb2, normalize=False, distance_metric="euclidean", num_top=50):
@@ -98,7 +99,7 @@ def score_alignment_matrix(alignment_matrix, topk=None, topk_score_weighted=Fals
                 node_sorted_indices = possible_alignments[possible_values.argsort()]
             else:
                 node_sorted_indices = sorted_indices[node_index]
-            if target_alignment in node_sorted_indices[-topk:]:
+            if target_alignment in node_sorted_indices[:topk]:
                 if topk_score_weighted:
                     alignment_score += 1.0 / (n_nodes - np.argwhere(sorted_indices[node_index] == target_alignment)[0])
                 else:

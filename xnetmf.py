@@ -151,7 +151,8 @@ def compute_similarity(graph, rep_method, vec1, vec2, node_attributes=None, node
 # Output: np array of node IDs
 def get_sample_nodes(graph, rep_method, verbose=True):
     # Sample uniformly at random
-    sample = np.random.permutation(np.arange(graph.N))[:rep_method.p]
+    # sample = np.random.permutation(np.arange(graph.N))[:rep_method.p]
+    sample = [x for x in range(graph.N)]
     return sample
 
 

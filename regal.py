@@ -34,15 +34,21 @@ class Regal(MethodView):
         self.untillayer = 2  # Calculation until the layer for xNetMF
         self.alpha = 0.01  # Discount factor for further layers
         self.gammastruc = 1  # Weight on structural similarity
-        self.gammaattr = 1  # Weight on structural similarity
+        self.gammaattr = 5 # Weight on attributes similarity
         self.numtop = 3  # Number of top similarities to compute with kd-tree.  If 0, computes all pairwise similarities.
         self.buckets = 1  # Base of log for degree (node feature) binning
+        self.g1_nodes = None
+        self.g2_nodes = None
+        self.sim_measure = None
 
     def post(self):
         json = request.json
         self.input_matrix = json['matrix']
         self.output = 'emb/custom.emb'
         self.attributes = json['attributes']
+        self.g1_nodes = json['g1_nodes']
+        self.g2_nodes = json['g2_nodes']
+        self.sim_measure = json['sim_measure']
 
         # Get true alignments
         true_alignments_fname = json['alignments']  # can be changed if desired
@@ -68,13 +74,13 @@ class Regal(MethodView):
 
         # Score alignments learned from embeddings
         embed = np.load(self.output)
-        emb1, emb2 = get_embeddings(embed)
+        emb1, emb2 = get_embeddings(embed, self.g1_nodes, self.g2_nodes)
         before_align = time.time()
         if self.numtop == 0:
             self.numtop = None
-        alignment_matrix = get_embedding_similarities(emb1, emb2, num_top=self.numtop)
+        # alignment_matrix = get_embedding_similarities(emb1, emb2, num_top=self.numtop)
         # Without kd trees
-        # alignment_matrix = get_embedding_similarities(emb1, emb2, num_top=None, sim_measure='euclidean')
+        alignment_matrix = get_embedding_similarities(emb1, emb2, num_top=None, sim_measure=self.sim_measure)
 
         # Report scoring and timing
         after_align = time.time()
@@ -84,8 +90,8 @@ class Regal(MethodView):
         if true_alignments is not None:
             topk_scores = [1, 3]
             for k in topk_scores:
-                score, correct_nodes = score_alignment_matrix(alignment_matrix, topk=k, true_alignments=true_alignments)
-                # score, correct_nodes = score_alignment_matrix(alignment_matrix, topk=None, true_alignments=true_alignments)
+                # score, correct_nodes = score_alignment_matrix(alignment_matrix, topk=k, true_alignments=true_alignments)
+                score, correct_nodes = score_alignment_matrix(alignment_matrix, topk=None, true_alignments=true_alignments)
                 print("score top%d: %f" % (k, score))
 
     # Should take in a file with the input graph as edgelist (args.input)
@@ -110,6 +116,7 @@ class Regal(MethodView):
                                normalize=True,
                                gammastruc=self.gammastruc,
                                gammaattr=self.gammaattr)
+        rep_method.p = graph.N
         if max_layer is None:
             max_layer = 1000
         print("Learning representations with max layer %d and alpha = %f" % (max_layer, self.alpha))
