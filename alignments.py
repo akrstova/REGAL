@@ -45,7 +45,14 @@ def score(alignment_matrix, true_alignments=None):
         return np.sum(np.diagonal(alignment_matrix))
     else:
         for i in range(len(alignment_matrix)):
-            best_match = alignment_matrix[i].tolist().index(max(alignment_matrix[i]))
+            max_sim = max(alignment_matrix[i].tolist())
+            potential_matches = [k for k, j in enumerate(alignment_matrix[i].tolist()) if j == max_sim]
+            if len(potential_matches) > 1:
+                min_dist_to_index = [abs(x - i) for x in potential_matches]
+                min_index = min_dist_to_index.index(min(min_dist_to_index))
+                best_match = potential_matches[min_index]
+            else:
+                best_match = potential_matches[0]
             print('Best match for node {} from G1 is node {} from G2'.format(i, best_match))
         # nodes_g1 = [int(node_g1) for node_g1 in true_alignments.keys()]
         # nodes_g2 = [int(true_alignments[node_g1]) for node_g1 in true_alignments.keys()]
