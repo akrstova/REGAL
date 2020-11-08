@@ -6,6 +6,7 @@ import argparse
 import networkx as nx
 from flask import Flask, request, jsonify
 from flask.views import MethodView
+import json as JSON
 
 try:
     import cPickle as pickle
@@ -34,12 +35,13 @@ class Regal(MethodView):
         self.untillayer = 2  # Calculation until the layer for xNetMF
         self.alpha = 0.01  # Discount factor for further layers
         self.gammastruc = 1  # Weight on structural similarity
-        self.gammaattr = 5 # Weight on attributes similarity
+        self.gammaattr = 5  # Weight on attributes similarity
         self.numtop = 3  # Number of top similarities to compute with kd-tree.  If 0, computes all pairwise similarities.
         self.buckets = 1  # Base of log for degree (node feature) binning
         self.g1_nodes = None
         self.g2_nodes = None
         self.sim_measure = None
+        self.global_embeddings = None
 
     def post(self):
         json = request.json
@@ -86,13 +88,17 @@ class Regal(MethodView):
         after_align = time.time()
         total_time = after_align - before_align
         print("Align time: "), total_time
+        matched_nodes = {}
 
         if true_alignments is not None:
             topk_scores = [1, 3]
             for k in topk_scores:
                 # score, correct_nodes = score_alignment_matrix(alignment_matrix, topk=k, true_alignments=true_alignments)
-                score, correct_nodes = score_alignment_matrix(alignment_matrix, topk=None, true_alignments=true_alignments)
-                print("score top%d: %f" % (k, score))
+                matched_nodes, alignment_score, correct_nodes = score_alignment_matrix(alignment_matrix,
+                                                                                       topk=None,
+                                                                                       true_alignments=true_alignments)
+            print(matched_nodes)
+            return JSON.dumps(matched_nodes)
 
     # Should take in a file with the input graph as edgelist (args.input)
     # Should save representations to args.output
@@ -122,8 +128,25 @@ class Regal(MethodView):
         print("Learning representations with max layer %d and alpha = %f" % (max_layer, self.alpha))
         representations = xnetmf.get_representations(graph, rep_method)
         pickle.dump(representations, open(self.output, "wb"))
+        self.global_embeddings = representations
+
+
+class Embeddings(MethodView):
+
+    def post(self):
+        json = request.json
+        regal = Regal()
+        regal.input_matrix = json['matrix']
+        regal.output = 'emb/custom.emb'
+        regal.attributes = json['attributes']
+        regal.g1_nodes = json['g1_nodes']
+        regal.g2_nodes = json['g2_nodes']
+        regal.sim_measure = json['sim_measure']
+        regal.learn_representations()
+        return JSON.dumps(regal.global_embeddings.tolist())
 
 
 if __name__ == '__main__':
     app.add_url_rule('/regal/', view_func=Regal.as_view('regal'))
+    app.add_url_rule('/embeddings/', view_func=Embeddings.as_view('embeddings'), methods=['POST'])
     app.run(port=8000, host='0.0.0.0')
