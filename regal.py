@@ -138,7 +138,9 @@ class Embeddings(MethodView):
         regal = Regal()
         regal.input_matrix = json['matrix']
         regal.output = 'emb/custom.emb'
-        regal.attributes = json['attributes']
+        if json['attributes'] is not None:
+            attributes_file = open(json['attributes'])
+            regal.attributes = np.load(attributes_file)  # load vector of attributes in from file
         regal.g1_nodes = json['g1_nodes']
         regal.g2_nodes = json['g2_nodes']
         regal.sim_measure = json['sim_measure']

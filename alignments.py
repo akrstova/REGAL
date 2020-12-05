@@ -1,3 +1,5 @@
+import collections
+
 import numpy as np
 import scipy.io as sio
 import sklearn.metrics.pairwise
@@ -41,22 +43,24 @@ def get_embeddings(combined_embed, g1_nodes, g2_nodes):
 # alignments are dictionary of the form node_in_graph 1 : node_in_graph2
 # rows of alignment matrix are nodes in graph 1, columns are nodes in graph2
 def score(alignment_matrix, true_alignments=None):
-    matched_nodes = {}
+    matched_nodes = collections.OrderedDict()
     score = 0
     if true_alignments is None:  # assume it's just identity permutation
         return np.sum(np.diagonal(alignment_matrix))
     else:
         for i in range(len(alignment_matrix)):
-            max_sim = max(alignment_matrix[i][i:].tolist())
-            potential_matches = [k+i for k, j in enumerate(alignment_matrix[i][i:].tolist()) if j == max_sim]
-            if len(potential_matches) > 1:
-                min_dist_to_index = [abs(x - i) for x in potential_matches]
-                min_index = min_dist_to_index.index(min(min_dist_to_index))
-                best_match = potential_matches[min_index]
-            else:
-                best_match = potential_matches[0]
-            print('Best match for node {} from G1 is node {} from G2'.format(i, best_match))
-            matched_nodes[i] = best_match
+            # max_sim = max(alignment_matrix[i][i:].tolist())
+            # potential_matches = [k+i for k, j in enumerate(alignment_matrix[i][i:].tolist()) if j == max_sim]
+            # if len(potential_matches) > 1:
+            #     min_dist_to_index = [abs(x - i) for x in potential_matches]
+            #     min_index = min_dist_to_index.index(min(min_dist_to_index))
+            #     best_match = potential_matches[min_index]
+            # else:
+            #     best_match = potential_matches[0]
+            # print('Best match for node {} from G1 is node {} from G2'.format(i, best_match))
+            indexes = range(0, len(alignment_matrix[i]))
+            matched_nodes[i] = sorted(zip(alignment_matrix[i], indexes), reverse=True)
+            print (matched_nodes)
         # nodes_g1 = [int(node_g1) for node_g1 in true_alignments.keys()]
         # nodes_g2 = [int(true_alignments[node_g1]) for node_g1 in true_alignments.keys()]
         # for node in nodes_g1:
