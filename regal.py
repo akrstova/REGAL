@@ -55,11 +55,11 @@ class Regal(MethodView):
         # Get true alignments
         true_alignments_fname = json['alignments']  # can be changed if desired
         print("true alignments file: ", true_alignments_fname)
-        true_alignments = None
-        if os.path.exists(true_alignments_fname):
-            with open(true_alignments_fname, "rb") as true_alignments_file:
-                true_alignments = pickle.load(true_alignments_file)
-                print(true_alignments)
+        true_alignments = []
+        # if os.path.exists(true_alignments_fname):
+        #     with open(true_alignments_fname, "rb") as true_alignments_file:
+        #         true_alignments = pickle.load(true_alignments_file)
+        #         print(true_alignments)
 
         # Load in attributes if desired (assumes they are numpy array)
         if self.attributes is not None:
