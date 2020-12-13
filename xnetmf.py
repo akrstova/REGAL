@@ -1,5 +1,10 @@
-import numpy as np, scipy as sp, networkx as nx
-import math, time, os, sys
+import math
+import sys
+import time
+
+import networkx as nx
+from Levenshtein import distance as levenshtein_distance
+
 from config import *
 
 
@@ -140,10 +145,38 @@ def get_features(graph, rep_method, verbose=True):
 def compute_similarity(graph, rep_method, vec1, vec2, node_attributes=None, node_indices=None):
     dist = rep_method.gammastruc * np.linalg.norm(vec1 - vec2)  # compare distances between structural identities
     if graph.node_attributes is not None:
+        column_names = graph.node_attributes[0, :]
+        node_attributes = graph.node_attributes[1:, :]
         # distance is number of disagreeing attributes
-        attr_dist = np.sum(graph.node_attributes[node_indices[0]] != graph.node_attributes[node_indices[1]])
+        # TODO implement custom distance function (Levenstein distance for strings) --> normalize to 0-1 per attribute
+        # TODO two passes needed
+        # attr_dist = np.sum(graph.node_attributes[node_indices[0]] != graph.node_attributes[node_indices[1]])
+        attr_dist = get_attribute_dist(node_attributes[node_indices[0]], node_attributes[node_indices[1]], column_names)
         dist += rep_method.gammaattr * attr_dist
     return np.exp(-dist)  # convert distances (weighted by coefficients on structure and attributes) to similarities
+
+
+def get_attribute_dist(attr_list1, attr_list2, column_names):
+    dist = 0
+    for i in range(len(attr_list1)):
+        attr1 = attr_list1[i]
+        attr2 = attr_list2[i]
+        attr_name = column_names[list(attr_list1).index(attr1)]
+        if (isinstance(attr1, str) and isinstance(attr2, str)) or (
+                isinstance(attr1, unicode) and isinstance(attr2, unicode)):
+            # if attr_name == u'name':
+            dist += levenshtein_distance(attr1, attr2)
+        # else:
+        #     dist += levenshtein_distance(attr1, attr2)
+        elif (isinstance(attr1, int) and isinstance(attr2, int)) or (
+                isinstance(attr1, float) and isinstance(attr2, float)):
+            # if attr_name == u'index':
+            #     dist += abs(attr1 - attr2) * 1.2
+            # else:
+            dist += abs(attr1 - attr2)
+        else:
+            dist += int(np.all(attr1 != attr2))
+    return dist
 
 
 # Sample landmark nodes (to compute all pairwise similarities to in Nystrom approx)
@@ -186,7 +219,7 @@ def get_representations(graph, rep_method, verbose=True):
     before_computesim = time.time()
     C = np.zeros((graph.N, rep_method.p))
     for node_index in range(graph.N):  # for each of N nodes
-        for landmark_index in range(rep_method.p):  # for each of p landmarks
+        for landmark_index in range(graph.N):  # for each of p landmarks
             # select the p-th landmark
             C[node_index, landmark_index] = compute_similarity(graph,
                                                                rep_method,
@@ -194,6 +227,7 @@ def get_representations(graph, rep_method, verbose=True):
                                                                feature_matrix[landmarks[landmark_index]],
                                                                graph.node_attributes,
                                                                (node_index, landmarks[landmark_index]))
+            print()
 
     before_computerep = time.time()
 

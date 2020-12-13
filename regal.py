@@ -31,10 +31,10 @@ class Regal(MethodView):
         self.attributes = None  # File with saved numpy matrix of node attributes, or int of number of attributes to synthetically generate
         self.attrvals = 1  # Number of attribute values. Only used if synthetic attributes are generated
         self.dimensions = 16
-        self.k = 3  # Controls of landmarks to sample
+        self.k = 3  # Controls number of landmarks to sample
         self.untillayer = 2  # Calculation until the layer for xNetMF
         self.alpha = 0.01  # Discount factor for further layers
-        self.gammastruc = 1  # Weight on structural similarity
+        self.gammastruc = 3  # Weight on structural similarity
         self.gammaattr = 5  # Weight on attributes similarity
         self.numtop = 3  # Number of top similarities to compute with kd-tree.  If 0, computes all pairwise similarities.
         self.buckets = 1  # Base of log for degree (node feature) binning
