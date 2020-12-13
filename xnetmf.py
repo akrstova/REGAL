@@ -153,7 +153,7 @@ def compute_similarity(graph, rep_method, vec1, vec2, node_attributes=None, node
         # attr_dist = np.sum(graph.node_attributes[node_indices[0]] != graph.node_attributes[node_indices[1]])
         attr_dist = get_attribute_dist(node_attributes[node_indices[0]], node_attributes[node_indices[1]], column_names)
         dist += rep_method.gammaattr * attr_dist
-    return np.exp(-dist)  # convert distances (weighted by coefficients on structure and attributes) to similarities
+    return np.exp(-dist / graph.N)  # convert distances (weighted by coefficients on structure and attributes) to similarities
 
 
 def get_attribute_dist(attr_list1, attr_list2, column_names):
