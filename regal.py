@@ -54,18 +54,12 @@ class Regal(MethodView):
 
         # Get true alignments
         true_alignments_fname = json['alignments']  # can be changed if desired
-        print("true alignments file: ", true_alignments_fname)
         true_alignments = []
-        # if os.path.exists(true_alignments_fname):
-        #     with open(true_alignments_fname, "rb") as true_alignments_file:
-        #         true_alignments = pickle.load(true_alignments_file)
-        #         print(true_alignments)
 
         # Load in attributes if desired (assumes they are numpy array)
         if self.attributes is not None:
             attributes_file = open(self.attributes)
             self.attributes = np.load(attributes_file)  # load vector of attributes in from file
-            print(self.attributes.shape)
 
         # Learn embeddings and save to output
         print("learning representations...")
@@ -97,7 +91,6 @@ class Regal(MethodView):
                 matched_nodes, alignment_score, correct_nodes = score_alignment_matrix(alignment_matrix,
                                                                                        topk=None,
                                                                                        true_alignments=true_alignments)
-            print(matched_nodes)
             return JSON.dumps(matched_nodes)
 
     # Should take in a file with the input graph as edgelist (args.input)

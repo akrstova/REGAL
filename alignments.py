@@ -60,7 +60,6 @@ def score(alignment_matrix, true_alignments=None):
             # print('Best match for node {} from G1 is node {} from G2'.format(i, best_match))
             indexes = range(0, len(alignment_matrix[i]))
             matched_nodes[i] = sorted(zip(alignment_matrix[i], indexes), reverse=True)
-            print (matched_nodes)
         # nodes_g1 = [int(node_g1) for node_g1 in true_alignments.keys()]
         # nodes_g2 = [int(true_alignments[node_g1]) for node_g1 in true_alignments.keys()]
         # for node in nodes_g1:
