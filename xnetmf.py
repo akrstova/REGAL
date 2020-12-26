@@ -148,8 +148,7 @@ def compute_similarity(graph, rep_method, vec1, vec2, node_attributes=None, node
         column_names = graph.node_attributes[0, :]
         node_attributes = graph.node_attributes[1:, :]
         # distance is number of disagreeing attributes
-        # TODO implement custom distance function (Levenstein distance for strings) --> normalize to 0-1 per attribute
-        # TODO two passes needed
+
         # attr_dist = np.sum(graph.node_attributes[node_indices[0]] != graph.node_attributes[node_indices[1]])
         # Normalize Levenshtein distance
         attr_dist = get_attribute_dist(node_attributes[node_indices[0]], node_attributes[node_indices[1]], column_names)
@@ -158,6 +157,7 @@ def compute_similarity(graph, rep_method, vec1, vec2, node_attributes=None, node
 
 
 def get_attribute_dist(attr_list1, attr_list2, column_names):
+    # TODO make alignment matrix with all distances and just make a lookup
     dist = 0
     for i in range(len(attr_list1)):
         attr1 = attr_list1[i]
@@ -165,11 +165,7 @@ def get_attribute_dist(attr_list1, attr_list2, column_names):
         attr_name = column_names[list(attr_list1).index(attr1)]
         if (isinstance(attr1, str) and isinstance(attr2, str)) or (
                 isinstance(attr1, unicode) and isinstance(attr2, unicode)):
-            if attr_name == 'name':
-                levenshtein = levenshtein_distance(attr1, attr2) / float(max(len(attr1), len(attr2)))
-            else:
-                levenshtein = levenshtein_distance(attr1, attr2)
-            dist += levenshtein
+            dist += levenshtein_distance(attr1, attr2) / float(max(len(attr1), len(attr2)))
         elif (isinstance(attr1, int) and isinstance(attr2, int)) or (
                 isinstance(attr1, float) and isinstance(attr2, float)):
             dist += abs(attr1 - attr2)

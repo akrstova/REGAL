@@ -43,7 +43,8 @@ def get_embeddings(combined_embed, g1_nodes, g2_nodes):
 # alignments are dictionary of the form node_in_graph 1 : node_in_graph2
 # rows of alignment matrix are nodes in graph 1, columns are nodes in graph2
 def score(alignment_matrix, true_alignments=None):
-    matched_nodes = collections.OrderedDict()
+    matches_g1_g2 = collections.OrderedDict()
+    matches_g2_g1 = collections.OrderedDict()
     score = 0
     if true_alignments is None:  # assume it's just identity permutation
         return np.sum(np.diagonal(alignment_matrix))
@@ -59,14 +60,18 @@ def score(alignment_matrix, true_alignments=None):
             #     best_match = potential_matches[0]
             # print('Best match for node {} from G1 is node {} from G2'.format(i, best_match))
             indexes = range(0, len(alignment_matrix[i]))
-            matched_nodes[i] = sorted(zip(alignment_matrix[i], indexes), reverse=True)
+            matches_g1_g2[i] = sorted(zip(alignment_matrix[i], indexes), reverse=True)
+
+        for column in range(len(alignment_matrix.T)):
+            indexes = range(0, len(alignment_matrix.T[column]))
+            matches_g2_g1[column] = sorted(zip(alignment_matrix.T[column], indexes), reverse=True)
         # nodes_g1 = [int(node_g1) for node_g1 in true_alignments.keys()]
         # nodes_g2 = [int(true_alignments[node_g1]) for node_g1 in true_alignments.keys()]
         # for node in nodes_g1:
         #     best_match = alignment_matrix[node].tolist().index(max(alignment_matrix[node]))
         #     print('Best match for node {} from G1 is node {} from G2'.format(node, nodes_g2[best_match]))
         # return np.sum(alignment_matrix[nodes_g1, nodes_g2])
-        return matched_nodes, score
+        return matches_g1_g2, matches_g2_g1, score
 
 
 def kd_align(emb1, emb2, normalize=False, distance_metric="euclidean", num_top=50):
@@ -91,14 +96,15 @@ def kd_align(emb1, emb2, normalize=False, distance_metric="euclidean", num_top=5
 def score_alignment_matrix(alignment_matrix, topk=None, topk_score_weighted=False, true_alignments=None):
     n_nodes = alignment_matrix.shape[0]
     correct_nodes = []
-    matched_nodes = {}
+    matches_g1_g2 = {}
+    matches_g2_g1 = {}
 
     if topk is None:
         row_sums = alignment_matrix.sum(axis=1)
         row_sums[row_sums == 0] = 10e-6  # shouldn't affect much since dividing 0 by anything is 0
         alignment_matrix = alignment_matrix / row_sums[:, np.newaxis]  # normalize
 
-        matched_nodes, alignment_score = score(alignment_matrix, true_alignments=true_alignments)
+        matches_g1_g2, matches_g2_g1, alignment_score = score(alignment_matrix, true_alignments=true_alignments)
     else:
         alignment_score = 0
         if not sp.issparse(alignment_matrix):
@@ -122,4 +128,4 @@ def score_alignment_matrix(alignment_matrix, topk=None, topk_score_weighted=Fals
         alignment_score /= float(n_nodes)
 
     # TODO compute score and correct nodes if necessary
-    return matched_nodes, alignment_score, set(correct_nodes)
+    return matches_g1_g2, matches_g2_g1, alignment_score, set(correct_nodes)

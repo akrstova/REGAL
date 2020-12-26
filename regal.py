@@ -1,18 +1,14 @@
-import os
-import sys
-import time
-import numpy as np
-import argparse
-import networkx as nx
-from flask import Flask, request, jsonify
-from flask.views import MethodView
 import json as JSON
+import time
+
+import networkx as nx
+from flask import Flask, request
+from flask.views import MethodView
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
-from scipy.sparse import csr_matrix
 
 import xnetmf
 from config import *
@@ -60,6 +56,18 @@ class Regal(MethodView):
         if self.attributes is not None:
             attributes_file = open(self.attributes)
             self.attributes = np.load(attributes_file)  # load vector of attributes in from file
+            # Parse attribute values into floats
+            converted_attributes = []
+            for sublist in list(self.attributes):
+                new_sublist = []
+                for i in range(len(sublist)):
+                    try:
+                        new_sublist.append(float(sublist[i]))
+                    except:
+                        new_sublist.append(sublist[i])
+                converted_attributes.append(new_sublist)
+
+            self.attributes = np.array(converted_attributes)
 
         # Learn embeddings and save to output
         print("learning representations...")
@@ -82,16 +90,17 @@ class Regal(MethodView):
         after_align = time.time()
         total_time = after_align - before_align
         print("Align time: "), total_time
-        matched_nodes = {}
+        matches_g1_g2 = {}
+        matches_g2_g1 = {}
 
         if true_alignments is not None:
             topk_scores = [1, 3]
             for k in topk_scores:
                 # score, correct_nodes = score_alignment_matrix(alignment_matrix, topk=k, true_alignments=true_alignments)
-                matched_nodes, alignment_score, correct_nodes = score_alignment_matrix(alignment_matrix,
-                                                                                       topk=None,
-                                                                                       true_alignments=true_alignments)
-            return JSON.dumps(matched_nodes)
+                matches_g1_g2, matches_g2_g1, alignment_score, correct_nodes = score_alignment_matrix(alignment_matrix,
+                                                                                                      topk=None,
+                                                                                                      true_alignments=true_alignments)
+            return JSON.dumps({'matches_g1_g2': matches_g1_g2, 'matches_g2_g1': matches_g2_g1})
 
     # Should take in a file with the input graph as edgelist (args.input)
     # Should save representations to args.output
